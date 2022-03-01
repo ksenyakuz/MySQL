@@ -1,0 +1,49 @@
+# Написать крипт, добавляющий в БД vk, которую создали на занятии, 3 новые таблицы (с перечнем полей, указанием индексов и внешних ключей)
+
+
+DROP TABLE IF EXISTS comments_to_media;
+CREATE TABLE comments_to_media(
+	id SERIAL,
+	comment_id BIGINT UNSIGNED NOT NULL,
+	user_id BIGINT UNSIGNED NOT NULL,
+	body VARCHAR(255),
+	created_at DATETIME DEFAULT NOW(),
+	updated_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
+	comment ENUM('edit', 'save', 'delete'),
+
+	FOREIGN KEY (user_id) REFERENCES users(id),
+	FOREIGN KEY (comment_id) REFERENCES media(id),
+	FOREIGN KEY (comment_id) REFERENCES users(id)
+);
+
+DROP TABLE IF EXISTS music;
+CREATE TABLE music(
+	id SERIAL,
+	body VARCHAR(255),
+	track_name VARCHAR(255),
+	track_status ENUM('add', 'remove'),
+	user_id BIGINT UNSIGNED NOT NULL,
+	metadata JSON,
+	
+	FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+DROP TABLE IF EXISTS games;
+CREATE TABLE games(
+	id SERIAL,
+	name VARCHAR(255),
+	game_owner_id BIGINT UNSIGNED NOT NULL,
+	game_id BIGINT UNSIGNED NOT NULL,
+	
+	INDEX (name),
+	FOREIGN KEY (game_owner_id) REFERENCES users(id)
+);
+
+DROP TABLE IF EXISTS users_games;
+CREATE TABLE users_games(
+	user_id BIGINT UNSIGNED NOT NULL,
+	game_id BIGINT UNSIGNED NOT NULL,
+	
+	FOREIGN KEY (user_id) REFERENCES users(id),
+	FOREIGN KEY (game_id) REFERENCES games(id)
+);
