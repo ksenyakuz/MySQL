@@ -1,0 +1,205 @@
+# i. Заполнить все таблицы БД vk данными (не больше 10-20 записей в каждой таблице)
+# ii. Написать скрипт, возвращающий список имен (только firstname) пользователей без повторений в алфавитном порядке
+# iii. Написать скрипт, отмечающий несовершеннолетних пользователей как неактивных (поле is_active = false). Предварительно добавить такое поле в таблицу profiles со значением по умолчанию = true (или 1)
+# iv. Написать скрипт, удаляющий сообщения «из будущего» (дата больше сегодняшней)
+# v. Написать название темы курсового проекта (в комментарии)
+
+Задание 1
+
+USE vk;
+
+INSERT INTO users (firstname, lastname, email, phone, password_hash)
+VALUES 
+('Alla', 'Ivanova', 'abv1@mail.ru', '89112223344', 'qwertyuiop123vbnm'),
+('Boris', 'Petrov', 'bvg45@mail.ru', '89223336458', 'pwertyuiop123vbnm'),
+('Vladimir', 'Koshkin', 'kmn65@mail.ru', '89502224455', 'lwertyuiop123vbnm'),
+('Irina', 'Fomina', 'iri4@mail.ru', '89113685241', 'rwertyuiop123vbnm'),
+('Igor', 'Golovin', 'igr33@mail.ru', '89745236985', 'ruertyuiop123vbnm'),
+('Marina', 'Fireva', 'mar89@mail.ru', '89514569823', 'ruertymiop123vbnm'),
+('Anastasia', 'Frolova', 'ana66@mail.ru', '89213652187', 'ruebtyuiop123vbnm'),
+('Petr', 'Silivanov', 'petrs79@mail.ru', '89112586932', 'luertyuiop123vbnm'),
+('Maria', 'Kuzina', 'marv4@mail.ru', '89214785263', 'rueutyuiop123vbnm'),
+('Ivan', 'Menshov', 'van70@mail.ru', '89662587432', 'ruertyuiop523vbnm');
+
+
+INSERT INTO profiles (user_id, gender, hometown, birthday)
+VALUES
+('1', 'f', 'New York', '1993-12-12'),
+('2', 'm', 'Tokyo', '1987-11-23'),
+('3', 'm', 'Oslo', '2009-01-09'),
+('4', 'f', 'Moscow', '1956-10-04'),
+('5', 'm', 'Liverpool', '1993-06-03'),
+('6', 'f', 'Irkutsk', '1988-12-15'),
+('7', 'f', 'Dusseldorf', '2007-04-28'),
+('8', 'm', 'Dubna', '1984-07-29'),
+('9', 'f', 'Kaliningrad', '1996-03-30'),
+('10', 'm', 'St-Petersburg', '1999-05-05');
+
+
+INSERT INTO friends_requests (initiator_user_id, target_user_id)
+VALUES
+('1', '3'),
+('2', '5'),
+('3', '9'),
+('4', '7'),
+('5', '6'),
+('6', '8'),
+('7', '1'),
+('8', '3'),
+('9', '2'),
+('10', '1');
+
+
+INSERT INTO messages (from_user_id, to_user_id, body)
+VALUES
+('1', '3', 'We are very much alike: open-hearted, smart and merry.'),
+('2', '4', 'Thats why we have a lot of friends.'),
+('3', '5', 'I like organizing parties for our friends as we often gather together'),
+('4', '6', 'My hobby is music. I play the guitar'),
+('5', '7', 'Cooking is also my hobby. My Mom cooks very well'),
+('6', '8', 'In the evening, I often watch TV with my family'),
+('7', '9', 'I sometimes discuss her style and ideas with my sister'),
+('8', '10', 'I study at the university in my native town'),
+('9', '1', 'Lena is 2 years older than me.'),
+('10', '2', ' My favorite dish is French soup, which I cook for the whole family');
+
+
+INSERT INTO communities (name, admin_user_id)
+VALUES
+('Pets', '1'),
+('Hobbies', '2'),
+('Bikes', '3'),
+('World', '4'),
+('Cars', '5'),
+('Music', '6'),
+('Cats', '7'),
+('Dogs', '8'),
+('Food', '9'),
+('Singers', '9');
+
+
+INSERT INTO users_communities (user_id, community_id)
+VALUES
+('1', '10'),
+('2', '9'),
+('3', '8'),
+('4', '7'),
+('5', '6'),
+('6', '5'),
+('7', '4'),
+('8', '3'),
+('9', '2'),
+('10', '1');
+
+
+INSERT INTO media (user_id, body, filename, media_type)
+VALUES
+('1', 'I am a student of the second year of study', 'photo1', 'image'),
+('2', '', 'photo2', 'image'),
+('3', 'When I have free time I usually go to the biggest music shop in my town', 'track1', 'music'),
+('4', '', 'track2', 'music'),
+('5', 'As for food, I like to go to a supermarket and buy there everything my family needs', '', 'text'),
+('6', '', 'video1', 'video'),
+('7', 'When I need new clothes, I usually go to a shop', 'video2', 'video'),
+('8', '', 'photo3', 'image'),
+('9', '', 'track3', 'music'),
+('10', 'I have a big collection of CDs at home', 'track4', 'music');
+
+
+INSERT INTO comments_to_media (comment_id, user_id, media_id, body)
+VALUES
+('1', '1', '5', 'Aprils Fool is a joke and sometimes'),
+('2', '2', '6', 'In fact everyone, adults and children, take part in the celebration'),
+('3', '3', '7', 'Fun'),
+('4', '4', '8', 'If it rains, I also take the bus'),
+('5', '5', '9', 'I have to go a lot of stops'),
+('6', '6', '10', 'I love animals'),
+('7', '7', '1', 'just like me'),
+('8', '8', '2', 'love this'),
+('9', '9', '3', 'My parents have a lot of paintings and photos in their room'),
+('10', '10', '4', 'interesting news');
+
+
+INSERT INTO games (name, game_owner_id, game_id)
+VALUES
+('World of WarCraft', '2', '1'),
+('Tanks', '2', '2'),
+('Super Mario Bros', '3', '3'),
+('Alladin', '3', '4'),
+('Warships', '4', '5'),
+('Domino', '4', '6'),
+('Sudoku', '5', '7'),
+('It takes Two', '5', '8'),
+('A way Out', '6', '9'),
+('Far Cry', '6', '10');
+
+
+INSERT INTO likes (user_id, media_id)
+VALUES
+('1', '9'),
+('2', '10'),
+('3', '8'),
+('4', '6'),
+('5', '7'),
+('6', '1'),
+('7', '4'),
+('8', '5'),
+('9', '2'),
+('10', '3');
+
+
+INSERT INTO music (body, track_name, user_id)
+VALUES
+('', 'Bar Original', '1'),
+('1967', 'A Beginning', '2'),
+('1963', 'All Together Now', '3'),
+('', 'Back in the U.S.S.R.', '4'),
+('1967', 'Cant Buy Me Love', '5'),
+('', 'Drive My Car', '6'),
+('1969', 'Fixing a Hole', '7'),
+('', 'Good Day Sunshine', '8'),
+('', 'Help!', '9'),
+('1964', 'I Feel Fine', '10');
+
+
+INSERT INTO users_games (user_id, game_id)
+VALUES
+('1', '4'),
+('2', '10'),
+('3', '9'),
+('4', '3'),
+('5', '1'),
+('6', '5'),
+('7', '8'),
+('8', '2'),
+('9', '6'),
+('10', '7');
+
+
+# Задание 2
+
+SELECT DISTINCT firstname
+FROM users
+;
+
+
+# Задание 3
+
+ALTER TABLE profiles  
+ADD COLUMN is_active BIT DEFAULT 1;
+
+UPDATE profiles 
+SET 
+  is_active = 0
+WHERE birthday + INTERVAL 18 YEAR > NOW();
+
+
+# Задание 4
+
+UPDATE messages 
+	SET created_at = '2023-03-01 20:47:00'
+	WHERE id = 6;
+
+DELETE FROM messages 
+WHERE created_at > now();
+
