@@ -1,0 +1,42 @@
+Задачи необходимо решить с использованием объединения таблиц (JOIN)
+
+
+/* Задание 1. Пусть задан некоторый пользователь. Из всех пользователей соц. сети найдите человека, 
+который больше всех общался с выбранным пользователем (написал ему сообщений). */
+
+USE vk;
+
+SELECT 
+	from_user_id AS 'Отправитель'
+FROM 
+	messages
+JOIN
+	profiles ON messages.from_user_id = profiles.user_id  
+WHERE messages.to_user_id = 2;
+
+
+/* Задание 2. Подсчитать общее количество лайков, которые получили пользователи младше 10 лет */
+
+USE vk;
+
+SELECT 
+	COUNT(*) AS 'Количество лайков' 
+FROM 
+	likes
+JOIN 
+	profiles ON likes.user_id = profiles.user_id 
+WHERE (YEAR(NOW())-YEAR(birthday)) < 10;
+
+
+/* Задание 3. Определить кто больше поставил лайков (всего): мужчины или женщины */
+
+USE vk;
+
+SELECT 
+	gender AS 'Пол',
+	COUNT(*) AS 'Количество лайков'
+FROM 
+	profiles
+JOIN likes ON profiles.user_id = likes.user_id
+GROUP BY gender; 
+
