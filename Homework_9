@@ -1,0 +1,111 @@
+/* Транзакции, переменные, представления */
+
+/* Задание 1. В базе данных shop и sample присутствуют одни и те же таблицы, учебной базы данных. 
+Переместите запись id = 1 из таблицы shop.users в таблицу sample.users. Используйте транзакции. */
+
+
+DROP DATABASE IF EXISTS sample;
+CREATE DATABASE sample;
+USE sample;
+
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) COMMENT 'Имя покупателя',
+  birthday_at DATE COMMENT 'Дата рождения',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) COMMENT = 'Покупатели';
+
+INSERT INTO users VALUES
+  (DEFAULT, 'Иван Иванов', '1993-04-19', DEFAULT, DEFAULT),
+  (DEFAULT, 'Кристина Сидорова', '1986-09-25', DEFAULT, DEFAULT),
+  (DEFAULT, 'Олег Козлов', '2002-11-15', DEFAULT, DEFAULT)
+ ;
+
+
+START TRANSACTION;
+INSERT INTO sample.users (name, birthday_at)
+SELECT shop.users.name, shop.users.birthday_at 
+FROM shop.users 
+WHERE id = 1;
+COMMIT;
+
+
+/* Задание 2. Создайте представление, которое выводит название name товарной позиции из 
+таблицы products и соответствующее название каталога name из таблицы catalogs. */
+
+USE shop;
+
+CREATE OR REPLACE VIEW prod_cat (prod_id, prod_name, cat_name) AS
+SELECT
+	p.id AS prod_id, p.name, cat.name
+FROM products AS p
+LEFT JOIN catalogs AS cat
+ON p.id = cat.id;
+
+SELECT * FROM prod_cat;
+
+
+
+/* Хранимые процедуры и функции, триггеры */
+
+/* Задание 1. Создайте хранимую функцию hello(), которая будет возвращать приветствие,
+в зависимости от текущего времени суток. С 6:00 до 12:00 функция должна возвращать фразу "Доброе утро", 
+с 12:00 до 18:00 функция должна возвращать фразу "Добрый день", с 18:00 до 00:00 — "Добрый вечер", 
+с 00:00 до 6:00 — "Доброй ночи". */
+
+
+DROP PROCEDURE IF EXISTS hello;
+
+DELIMITER //
+
+CREATE PROCEDURE hello()
+BEGIN
+	CASE 
+		WHEN CURTIME() BETWEEN '06:00:00' AND '12:00:00' THEN
+			SELECT 'Доброе утро';
+		WHEN CURTIME() BETWEEN '12:00:00' AND '18:00:00' THEN
+			SELECT 'Добрый день';
+		WHEN CURTIME() BETWEEN '18:00:00' AND '00:00:00' THEN
+			SELECT 'Добрый вечер';
+		ELSE
+			SELECT 'Доброй ночи';
+	END CASE;
+END //
+
+DELIMITER ;
+
+CALL hello();
+
+
+/* Задание 2. В таблице products есть два текстовых поля: name с названием товара и description с его описанием. 
+Допустимо присутствие обоих полей или одно из них. Ситуация, когда оба поля принимают неопределенное 
+значение NULL неприемлема. Используя триггеры, добейтесь того, чтобы одно из этих полей или оба поля были заполнены.
+При попытке присвоить полям NULL-значение необходимо отменить операцию. */
+
+
+DROP TRIGGER IF EXISTS null_Trigger;
+
+DELIMITER //
+
+CREATE TRIGGER null_Trigger BEFORE INSERT ON products
+FOR EACH ROW
+BEGIN
+	IF(ISNULL(NEW.name) AND ISNULL(NEW.description)) THEN
+		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Вы можете указать только одно NULL-значение!';
+	END IF;
+END //
+
+DELIMITER ;
+
+INSERT INTO products (name, description, price, catalog_id)
+VALUES ('Процессор AMD FX-4350 OEM', 'Четырехъядерный процессор AMD FX-4350 с AM3-сокетом', 3400, 1);
+
+INSERT INTO products (name, description, price, catalog_id)
+VALUES (NULL, NULL, 15000, 5);
+
+INSERT INTO products (name, description, price, catalog_id)
+VALUES ('ASUS PRIME H510M-K', NULL, 5950, 2);
+
+
