@@ -1,0 +1,441 @@
+/* 
+База данных headhunter реализует регистрацию пользователей, как соискателей и работодателей.
+Реализовано создание резюме для соискателей и размещение вакансий для работодателей.
+Предусмотрен поиск по сайту для всех пользователей, обмен сообщениями.
+Для соискателей есть возможность добавления в избранное понравившегося работодателя, подборка статей и новостей, а также просмотр откликов.
+Для работодателей есть возможность просмотра отправленных кандидатам предложений.
+ */
+
+
+
+/* Основа базы */
+
+DROP DATABASE IF EXISTS headhunter;
+CREATE DATABASE headhunter;
+USE headhunter;
+
+DROP TABLE IF EXISTS users;
+CREATE TABLE users(
+	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	firstname VARCHAR(100),
+	lastname VARCHAR(100),
+	birthday DATE,
+	hometown VARCHAR(100),
+	email VARCHAR(100) UNIQUE,
+	phone BIGINT UNSIGNED UNIQUE,
+	created_at DATETIME DEFAULT NOW(),
+	password_hash VARCHAR(256),
+	
+	INDEX users_name_idx(firstname, lastname)
+) COMMENT = 'Все пользватели сайта';
+
+
+DROP TABLE IF EXISTS groups_id;
+CREATE TABLE groups_id(
+	id SERIAL,
+	name VARCHAR(100),
+	
+	INDEX (name)
+) COMMENT = 'Категории - соискатель или работодатель';
+
+
+DROP TABLE IF EXISTS users_groups;
+CREATE TABLE users_groups(
+	user_id BIGINT UNSIGNED NOT NULL,
+	group_name VARCHAR(100),
+	group_id BIGINT UNSIGNED NOT NULL,
+	
+	FOREIGN KEY (user_id) REFERENCES users(id),
+	FOREIGN KEY (group_name) REFERENCES groups_id(name),
+	FOREIGN KEY (group_id) REFERENCES groups_id(id)
+) COMMENT = 'Пользователи каждой категории';
+
+
+DROP TABLE IF EXISTS resume;
+CREATE TABLE resume(
+	user_id BIGINT UNSIGNED NOT NULL,
+	firstname VARCHAR(100),
+	lastname VARCHAR(100),
+	gender CHAR(1),
+	hometown VARCHAR(200),
+	birthday DATE,
+	about_user TEXT,
+	created_at DATETIME DEFAULT NOW(),
+	
+	FOREIGN KEY (user_id) REFERENCES users(id)
+) COMMENT = 'Резюме соискателей';
+
+
+DROP TABLE IF EXISTS offers;
+CREATE TABLE offers(
+	id SERIAL,
+	user_id BIGINT UNSIGNED NOT NULL,
+	town VARCHAR(200),
+	offer_name VARCHAR(200),
+	offer_text TEXT,
+	salary BIGINT,
+	phone BIGINT UNSIGNED,
+	email VARCHAR(100),
+	created_at DATETIME DEFAULT NOW(),
+	
+	FOREIGN KEY (user_id) REFERENCES users(id)
+) COMMENT = 'Вакансии';
+
+
+DROP TABLE IF EXISTS messages;
+CREATE TABLE messages(
+	id SERIAL,
+	from_user_id BIGINT UNSIGNED NOT NULL,
+	to_user_id BIGINT UNSIGNED NOT NULL,
+	body VARCHAR(255),
+	created_at DATETIME DEFAULT NOW(),
+	
+	FOREIGN KEY (from_user_id) REFERENCES users(id),
+	FOREIGN KEY (to_user_id) REFERENCES users(id),
+	CHECK (from_user_id != to_user_id)
+) COMMENT = 'Личные сообщения';
+
+
+DROP TABLE IF EXISTS searching;
+CREATE TABLE searching(
+	id SERIAL,
+	user_id BIGINT UNSIGNED NOT NULL,
+	body VARCHAR(255),
+	created_at DATETIME DEFAULT NOW(),
+	
+	FOREIGN KEY (user_id) REFERENCES users(id)
+) COMMENT = 'Поиск по сайту';
+
+
+DROP TABLE IF EXISTS offers_info;
+CREATE TABLE offers_info(
+	id SERIAL,
+	offer_id BIGINT UNSIGNED NOT NULL,
+	from_user_id BIGINT UNSIGNED NOT NULL,
+	to_user_id BIGINT UNSIGNED NOT NULL,
+	comment ENUM('Отправлен', 'Просмотрен', 'Отказ', 'Приглашение на собеседование'),
+	
+	FOREIGN KEY (offer_id) REFERENCES offers(id),
+	FOREIGN KEY (from_user_id) REFERENCES users(id),
+	FOREIGN KEY (to_user_id) REFERENCES users(id),
+	CHECK (from_user_id != to_user_id)
+) COMMENT = 'Информация для работодателей по отправленным предложениям';
+
+
+DROP TABLE IF EXISTS response_info;
+CREATE TABLE response_info(
+	id SERIAL,
+	offer_id BIGINT UNSIGNED NOT NULL,
+	from_user_id BIGINT UNSIGNED NOT NULL,
+	to_user_id BIGINT UNSIGNED NOT NULL,
+	comment ENUM('Отправлен', 'Просмотрен', 'Отказ', 'Приглашение на собеседование'),
+	
+	FOREIGN KEY (offer_id) REFERENCES offers(id),
+	FOREIGN KEY (from_user_id) REFERENCES users(id),
+	FOREIGN KEY (to_user_id) REFERENCES users(id),
+	CHECK (from_user_id != to_user_id)
+) COMMENT = 'Информация для соискателей по их откликам';
+
+
+DROP TABLE IF EXISTS news;
+CREATE TABLE news(
+	id SERIAL,
+	heading_news VARCHAR(255),
+	body VARCHAR(255),
+	created_at DATETIME DEFAULT NOW(),
+	
+	INDEX (heading_news)
+) COMMENT = 'Новости трудового рынка';
+
+
+DROP TABLE IF EXISTS articles;
+CREATE TABLE articles(
+	id SERIAL,
+	heading_art VARCHAR(255),
+	body VARCHAR(255),
+	created_at DATETIME DEFAULT NOW(),
+	
+	INDEX (heading_art)
+) COMMENT = 'Полезные статьи';
+
+
+DROP TABLE IF EXISTS likes;
+CREATE TABLE likes(
+	id SERIAL,
+	from_user_id BIGINT UNSIGNED NOT NULL,
+	to_user_id BIGINT UNSIGNED NOT NULL,
+	offer_name VARCHAR(200),
+
+	FOREIGN KEY (from_user_id) REFERENCES users(id),
+	FOREIGN KEY (to_user_id) REFERENCES users(id),
+	CHECK (from_user_id != to_user_id)
+) COMMENT = 'Избранное - закладки пользователей (лайки работодателям)';
+
+
+
+/* Наполнение базы */
+
+USE headhunter;
+
+INSERT INTO users (firstname, lastname, birthday, hometown, email, phone)
+VALUES 
+('Иван','Петров','1975-05-06','Москва','ivanpetrov111@mail.ru','89992583456'), #1
+('Лариса','Иванова','1988-12-30','Москва','larisa56@mail.ru','89635554215'), #2
+('Роман','Соколов','2000-01-06','Санкт-Петербург','sokol89@mail.ru','89002456395'), #3
+('Мария','Сидорова','1993-06-25','Москва/Санкт-Петербург','sidorova77@mail.ru','89501248756'), #4
+('Василий','Пупкин','1994-11-07','Москва','pupok19@mail.ru','89631237452'), #5
+('Ирина','Протасова','1990-07-22','Санкт-Петербург','propira@mail.ru','89236594785'), #6
+('Глеб','Овсянкин','1985-10-09','Санкт-Петербург','glab999@mail.ru','89994425633'), #7
+('Николай','Шишков','1985-04-15','Москва/Санкт-Петербург','nikolay44@mail.ru','89392583256'), #8
+('Ольга','Максимова','1992-10-30','Санкт-Петербург','olga5@mail.ru','89263358694'), #9
+('Даниил','Иванов','1988-12-04','Москва','daniil666@mail.ru','89501459632'), #10
+('Регина','Кукушкина','1972-11-09','Москва/Санкт-Петербург','kukuha5@mail.ru','89213641288'), #11
+('Вадим','Ерошин','1981-11-29','Санкт-Петербург','ersh412@mail.ru','89112254499'), #12
+('Маргарита','Высоцкая','1979-02-23','Санкт-Петербург','visota678@mail.ru','89567797979'), #13
+('Михаил','Садовников','1996-06-01','Москва','mihsad2@mail.ru','89312584242'); #14
+
+
+INSERT INTO groups_id (id, name)
+VALUES 
+('1','Работодатель'),
+('2','Соискатель');
+
+
+INSERT INTO users_groups (user_id, group_name, group_id)
+VALUES
+('1','Работодатель','1'),
+('2','Соискатель','2'),
+('3','Соискатель','2'),
+('4','Работодатель','1'),
+('5','Соискатель','2'),
+('6','Соискатель','2'),
+('7','Работодатель','1'),
+('8','Работодатель','1'),
+('9','Соискатель','2'),
+('10','Соискатель','2'),
+('11','Работодатель','1'),
+('12','Соискатель','2'),
+('13','Соискатель','2'),
+('14','Работодатель','1');
+
+
+INSERT INTO resume (user_id, firstname, lastname, gender, hometown, birthday, about_user)
+VALUES 
+('2','Лариса','Иванова','Ж','Москва','1988-12-30','Бухгалтер'), #2
+('3','Роман','Соколов','М','Санкт-Петербург','2000-01-06','Слесарь'), #3
+('5','Василий','Пупкин','М','Москва','1994-11-07','Слесарь'), #5
+('6','Ирина','Протасова','Ж','Санкт-Петербург','1990-07-22','Менеджер по продажам'), #6
+('9','Ольга','Максимова', 'Ж','Санкт-Петербург','1992-10-30','Бухгалтер'), #9
+('10','Даниил','Иванов','М','Москва','1988-12-04','Слесарь'), #10
+('12','Вадим','Ерошин','М','Санкт-Петербург','1981-11-29','Бухгалтер'), #12
+('13','Маргарита','Высоцкая','Ж','Санкт-Петербург','1979-02-23','Менеджер по продажам') #13
+;
+
+
+INSERT INTO offers (user_id, town, offer_name, offer_text, salary, phone, email)
+VALUES 
+('1','Москва','Бухгалтер','Учёт расчётов с поставщиками и подрядчиками','70000','89992583456','ivanpetrov111@mail.ru'), #1
+('4','Санкт-Петербург','Слесарь','Ремонт ХВС и ГВС','35000','89501248756','sidorova77@mail.ru'), #4
+('4','Москва','Слесарь','Ремонт ХВС и ГВС','40000','89501248756','sidorova77@mail.ru'), #4
+('7','Санкт-Петербург','Менеджер по продажам','Активная продажа услуг связи','60000','89994425633','glab999@mail.ru'), #7
+('8','Санкт-Петербург','Бухгалтер','Ведение первичной документации','45000','89392583256','nikolay44@mail.ru'), #8
+('8','Санкт-Петербург','Менеджер по продажам','Продажа окон и дверей','50000','89392583256','nikolay44@mail.ru'), #8
+('11','Москва','Бухгалтер','Ведение налогового учета','75000','89213641288','kukuha5@mail.ru'), #11
+('11','Санкт-Петербург','Менеджер по продажам','Холодные звонки, продажа услуг','50000','89213641288','kukuha5@mail.ru'), #11
+('14','Москва','Слесарь','Ремонт и обслуживание домов','40000','89312584242','mihsad2@mail.ru') #14
+;
+
+
+INSERT INTO messages (from_user_id, to_user_id, body)
+VALUES 
+('1', '2', 'Рассмотрите нашу вакансию'),
+('3', '4', 'Хочу у вас работать'),
+('5', '4', 'Прошу рассмотреть мою кандидатуру'),
+('5', '14', 'Прошу рассмотреть мою кандидатуру'),
+('7', '6', 'Рассмотрите нашу вакансию'),
+('7', '13', 'Рассмотрите нашу вакансию'),
+('8', '9', 'Рассмотрите нашу вакансию'),
+('8', '12', 'Рассмотрите нашу вакансию'),
+('8', '6', 'Рассмотрите нашу вакансию'),
+('8', '13', 'Рассмотрите нашу вакансию'),
+('2', '11', 'Прошу рассмотреть мою кандидатуру'),
+('11', '6', 'Рассмотрите нашу вакансию'),
+('11', '13', 'Рассмотрите нашу вакансию'),
+('14', '10', 'Рассмотрите нашу вакансию');
+
+
+INSERT INTO searching (user_id, body)
+VALUES 
+('2','Работа в Москве и МО'),
+('3','Слесарь в СПБ'),
+('5','Слесарь в Москве'),
+('6','Менеджер по продажам');
+
+
+INSERT INTO offers_info (offer_id, from_user_id, to_user_id, comment) #'Отправлен', 'Просмотрен', 'Отказ', 'Приглашение на собеседование'
+VALUES 
+('1','1','2','Отправлен'),
+('4','7','6','Отправлен'),
+('4','7','13','Приглашение на собеседование'),
+('5','8','9','Просмотрен'),
+('5','8','12','Просмотрен'),
+('6','8','6','Приглашение на собеседование'),
+('6','8','13','Отказ'),
+('8','11','6','Просмотрен'),
+('8','11','13','Приглашение на собеседование'),
+('9','14','10','Просмотрен')
+;
+
+
+INSERT INTO response_info (offer_id, from_user_id, to_user_id, comment)
+VALUES
+('2','3','4','Просмотрен'),
+('3','5','4','Просмотрен'),
+('9','5','14','Приглашение на собеседование'),
+('7','2','11','Отказ');
+
+
+INSERT INTO news (heading_news, body)
+VALUES
+('Обзоры рынка труда','С марта 2020 года пандемия коронавируса оказала сильное влияние на нашу реальность'),
+('Мы продлили','Срок действия пакетов вакансий продлен'),
+('Зачем мы меняем форму заполнения','Нам важно, чтобы процесс создания вакансии был прост.'),
+('Каталог специализаций','Кандидатам без опыта станет проще искать работу'),
+('Премия HR-бренд 2021','Цифровая трансформация и забота о сотрудниках');
+
+
+INSERT INTO articles (heading_art, body)
+VALUES
+('Информация для бухгалтера','Как подготовить правильную отчетность по МСФО'),
+('Продажи менеджеров стали лучше','Продажи товаров и услуг компании, расширение круга клиентов и поддержание партнерских отношений с ними'),
+('Когда лучше идти в отпуск','Самые любимые месяца для отпуска у россиян — это июль и август, а вот в апреле и декабре работники отдыхают реже всего'),
+('Как нанимать по 500 человек','Новые инструменты и решения для поиска персонала'),
+('Лайфхаки для слесаря','Технологическая последовательность разборки, ремонта и сборки оборудования'),
+('Необходимо знать каждому менеджеру','Понимание потребностей клиента'),
+('Почему слесарь - дефицитный кадр','демонтаж, ремонт, наладка и пуск рабочего оборудования, прошедшего ремонт'),
+('Зачем бизнесу коуч','Бизнес-тренеры контролируют наставников внутри отделов и объясняют, как необходимо вводить в курс дела новых сотрудников'),
+('Налогообложение для бухгалтеров','На данный момент в базу поступила отчетность 300 тыс. организаций');
+
+
+INSERT INTO likes (from_user_id, to_user_id, offer_name)
+VALUES
+('2','1','Бухгалтер'),
+('2','11','Бухгалтер'),
+('3','4','Слесарь'),
+('5','4','Слесарь'),
+('5','14','Слесарь'),
+('6','7','Менеджер по продажам'),
+('6','8','Менеджер по продажам'),
+('6','11','Менеджер по продажам'),
+('9','8','Бухгалтер'),
+('10','4','Слесарь'),
+('10','14','Слесарь'),
+('12','8','Бухгалтер'),
+('13','7','Менеджер по продажам'),
+('13','8','Менеджер по продажам'),
+('13','11','Менеджер по продажам');
+
+
+
+/* SELECT, JOIN, VIEW */
+
+
+USE headhunter;
+
+#1
+CREATE OR REPLACE VIEW applicant_recomendation AS
+	SELECT DISTINCT o.user_id, o.town, o.offer_name, o.salary
+	FROM offers AS o
+JOIN users ON users.hometown = o.town
+JOIN users_groups AS ug ON ug.user_id = users.id 
+WHERE ug.group_id = 2 AND o.town = 'Москва';
+
+COMMENT = 'Все вакансии в вашем городе'
+
+
+SELECT * FROM applicant_recomendation
+ORDER BY user_id
+
+
+#2
+CREATE OR REPLACE VIEW employer_recomendation AS
+	SELECT DISTINCT r.user_id, r.firstname, r.lastname, r.hometown, r.about_user
+	FROM resume AS r
+JOIN users ON users.hometown = r.hometown
+JOIN users_groups AS ug ON ug.user_id = users.id 
+WHERE ug.group_id = 2 AND r.hometown = 'Санкт-Петербург';
+
+COMMENT = 'Соискатели в вашем городе'
+
+
+SELECT * FROM employer_recomendation
+ORDER BY user_id
+
+
+#3
+CREATE OR REPLACE VIEW artucle_recomendation AS
+	SELECT r.user_id, a.heading_art, a.body 
+FROM articles AS a
+JOIN resume AS r 
+    ON r.about_user LIKE '%менеджер%'
+WHERE a.heading_art LIKE '%менеджер%';
+
+
+COMMENT = 'Полезные статьи для соискателей'
+
+
+SELECT * FROM artucle_recomendation
+
+
+
+/* PROCEDURE, TRIGGER OR FUNCTION */
+
+USE headhunter;
+
+# рейтинг работодателя по количеству пользователей, добавивших в избранное
+
+DROP PROCEDURE IF EXISTS raiting_employers_likes;
+
+DELIMITER //
+
+CREATE PROCEDURE raiting_employers_likes()
+BEGIN
+	SELECT 
+  	COUNT(l1.to_user_id) AS raiting, 
+  	l2.to_user_id AS 'employer',
+  	u.hometown AS 'city'
+	FROM likes AS l1
+	JOIN likes AS l2 USING(id)
+	JOIN users AS u ON u.id = l1.from_user_id
+	GROUP BY l1.to_user_id
+	HAVING raiting >= 3;
+END //
+
+DELIMITER ;
+
+CALL raiting_employers_likes();
+	
+
+# рейтинг работодателя по количеству приглашений, отправленных работодателем
+
+DROP PROCEDURE IF EXISTS raiting_employers_offers;
+
+DELIMITER //
+
+CREATE PROCEDURE raiting_employers_offers()
+BEGIN
+	SELECT 
+  	COUNT(o1.from_user_id) AS raiting, 
+  	o2.from_user_id AS 'employer',
+  	u.hometown AS 'city'
+	FROM offers_info AS o1
+	JOIN offers_info AS o2 USING(id)
+	JOIN users AS u ON u.id = o1.to_user_id
+	GROUP BY o1.from_user_id
+	HAVING raiting >= 2;
+END //
+
+DELIMITER ;
+
+CALL raiting_employers_offers();
+
