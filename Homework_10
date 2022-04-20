@@ -1,0 +1,162 @@
+/* Основа базы */
+
+DROP DATABASE IF EXISTS headhunter;
+CREATE DATABASE headhunter;
+USE headhunter;
+
+DROP TABLE IF EXISTS users;
+CREATE TABLE users(
+	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	firstname VARCHAR(100),
+	lastname VARCHAR(100),
+	birthday DATE,
+	email VARCHAR(100) UNIQUE,
+	phone BIGINT UNSIGNED UNIQUE,
+	created_at DATETIME DEFAULT NOW(),
+	password_hash VARCHAR(256),
+	
+	INDEX users_name_idx(firstname, lastname)
+) COMMENT = 'Все пользватели сайта';
+
+
+DROP TABLE IF EXISTS groups_id;
+CREATE TABLE groups_id(
+	id SERIAL,
+	name VARCHAR(100),
+	
+	INDEX (name)
+) COMMENT = 'Категории - соискатель или работодатель';
+
+
+DROP TABLE IF EXISTS users_groups;
+CREATE TABLE users_groups(
+	user_id BIGINT UNSIGNED NOT NULL,
+	group_name VARCHAR(100),
+	group_id BIGINT UNSIGNED NOT NULL,
+	
+	FOREIGN KEY (user_id) REFERENCES users(id),
+	FOREIGN KEY (group_name) REFERENCES groups_id(name),
+	FOREIGN KEY (group_id) REFERENCES groups_id(id)
+) COMMENT = 'Пользователи каждой категории';
+
+
+DROP TABLE IF EXISTS resume;
+CREATE TABLE resume(
+	user_id BIGINT UNSIGNED NOT NULL,
+	firstname VARCHAR(100),
+	lastname VARCHAR(100),
+	gender CHAR(1),
+	hometown VARCHAR(200),
+	birthday DATE,
+	about_user TEXT,
+	created_at DATETIME DEFAULT NOW(),
+	
+	FOREIGN KEY (user_id) REFERENCES users(id)
+) COMMENT = 'Резюме соискателей';
+
+
+DROP TABLE IF EXISTS offers;
+CREATE TABLE offers(
+	id SERIAL,
+	user_id BIGINT UNSIGNED NOT NULL,
+	town VARCHAR(200),
+	offer_name VARCHAR(200),
+	offer_text TEXT,
+	salary BIGINT,
+	phone BIGINT UNSIGNED,
+	email VARCHAR(100),
+	created_at DATETIME DEFAULT NOW(),
+	
+	FOREIGN KEY (user_id) REFERENCES users(id)
+) COMMENT = 'Вакансии';
+
+
+DROP TABLE IF EXISTS messages;
+CREATE TABLE messages(
+	id SERIAL,
+	from_user_id BIGINT UNSIGNED NOT NULL,
+	to_user_id BIGINT UNSIGNED NOT NULL,
+	body VARCHAR(255),
+	created_at DATETIME DEFAULT NOW(),
+	
+	FOREIGN KEY (from_user_id) REFERENCES users(id),
+	FOREIGN KEY (to_user_id) REFERENCES users(id),
+	CHECK (from_user_id != to_user_id)
+) COMMENT = 'Личные сообщения';
+
+
+DROP TABLE IF EXISTS searching;
+CREATE TABLE searching(
+	id SERIAL,
+	user_id BIGINT UNSIGNED NOT NULL,
+	body VARCHAR(255),
+	created_at DATETIME DEFAULT NOW(),
+	
+	FOREIGN KEY (user_id) REFERENCES users(id)
+) COMMENT = 'Поиск по сайту';
+
+
+DROP TABLE IF EXISTS offers_info;
+CREATE TABLE offers_info(
+	id SERIAL,
+	offer_id BIGINT UNSIGNED NOT NULL,
+	from_user_id BIGINT UNSIGNED NOT NULL,
+	to_user_id BIGINT UNSIGNED NOT NULL,
+	comment ENUM('Отправлен', 'Просмотрен', 'Отказ', 'Приглашение на собеседование'),
+	
+	FOREIGN KEY (offer_id) REFERENCES offers(id),
+	FOREIGN KEY (from_user_id) REFERENCES users(id),
+	FOREIGN KEY (to_user_id) REFERENCES users(id),
+	CHECK (from_user_id != to_user_id)
+) COMMENT = 'Информация для работодателей по отправленным предложениям';
+
+
+DROP TABLE IF EXISTS response_info;
+CREATE TABLE response_info(
+	id SERIAL,
+	offer_id BIGINT UNSIGNED NOT NULL,
+	from_user_id BIGINT UNSIGNED NOT NULL,
+	to_user_id BIGINT UNSIGNED NOT NULL,
+	comment ENUM('Отправлен', 'Просмотрен', 'Отказ', 'Приглашение на собеседование'),
+	
+	FOREIGN KEY (offer_id) REFERENCES offers(id),
+	FOREIGN KEY (from_user_id) REFERENCES users(id),
+	FOREIGN KEY (to_user_id) REFERENCES users(id),
+	CHECK (from_user_id != to_user_id)
+) COMMENT = 'Информация для соискателей по их откликам';
+
+
+DROP TABLE IF EXISTS news;
+CREATE TABLE news(
+	id SERIAL,
+	heading_news VARCHAR(255),
+	body VARCHAR(255),
+	created_at DATETIME DEFAULT NOW(),
+	
+	INDEX (heading_news)
+) COMMENT = 'Новости трудового рынка';
+
+
+DROP TABLE IF EXISTS articles;
+CREATE TABLE articles(
+	id SERIAL,
+	heading_art VARCHAR(255),
+	body VARCHAR(255),
+	created_at DATETIME DEFAULT NOW(),
+	
+	INDEX (heading_art)
+) COMMENT = 'Полезные статьи';
+
+
+DROP TABLE IF EXISTS likes;
+CREATE TABLE likes(
+	id SERIAL,
+	from_user_id BIGINT UNSIGNED NOT NULL,
+	to_user_id BIGINT UNSIGNED NOT NULL,
+	offer_name VARCHAR(200),
+
+	FOREIGN KEY (from_user_id) REFERENCES users(id),
+	FOREIGN KEY (to_user_id) REFERENCES users(id),
+	CHECK (from_user_id != to_user_id)
+) COMMENT = 'Избранное - закладки пользователей (лайки работодателям)';
+
