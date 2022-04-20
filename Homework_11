@@ -1,0 +1,77 @@
+/* Создайте таблицу logs типа Archive. Пусть при каждом создании записи в таблицах users, catalogs и products в таблицу logs 
+ помещается время и дата создания записи, название таблицы, идентификатор первичного ключа и содержимое поля name. */
+
+USE shop;
+
+DROP TABLE IF EXISTS logs;
+
+CREATE TABLE logs (
+	create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+	table_name VARCHAR (255),
+	primarykey_id INT UNSIGNED NOT NULL,
+	content_name VARCHAR (255)
+  ) 
+	ENGINE ARCHIVE;
+
+
+DROP PROCEDURE IF EXISTS add_logs;
+
+DELIMITER //
+CREATE PROCEDURE add_logs (
+	tab_name VARCHAR (255),
+	id INT,
+	cont_name VARCHAR (255)
+)
+BEGIN
+	INSERT INTO logs (table_name, primarykey_id, content_name) VALUES (tab_name, id, cont_name);
+END //
+
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS add_from_catalogs;
+
+DELIMITER //
+CREATE TRIGGER add_from_catalogs
+AFTER INSERT ON catalogs
+FOR EACH ROW
+BEGIN
+	CALL add_logs('catalogs', NEW.id, NEW.name);
+END //
+
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS add_from_users;
+
+DELIMITER //
+
+CREATE TRIGGER add_from_users
+AFTER INSERT ON users
+FOR EACH ROW
+BEGIN
+	CALL add_logs('users', NEW.id, NEW.name);
+END //
+
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS add_from_products;
+
+DELIMITER //
+CREATE TRIGGER add_from_products
+AFTER INSERT ON products
+FOR EACH ROW
+BEGIN
+	CALL add_logs('products', NEW.id, NEW.name);
+END //
+
+DELIMITER ;
+
+
+SELECT * FROM products;
+INSERT INTO products (name, description, price, catalog_id) 
+VALUES 
+	('AMD Athlon X-4 950 OEM', 'Процессор AMD Athlon X4 950 OEM AM4', 4500, 1);
+DESC products;
+
